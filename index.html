@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BHUVAN // 3D Digital Media Specialist & Animator</title>
+    
+    <!-- Google Fonts & Tailwind CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #00f0ff;
+            --primary-glow: rgba(0, 240, 255, 0.4);
+            --secondary: #ff4655;
+            --accent: #3b82f6;
+            --bg-dark: #030712;
+            --panel-bg: rgba(15, 23, 42, 0.75);
+            --panel-border: rgba(0, 240, 255, 0.25);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            background-color: var(--bg-dark);
+            color: #ffffff;
+            font-family: 'Rajdhani', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        h1, h2, h3, h4, .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Scanlines Overlay Effect */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 0, 0, 0.35) 50%,
+                rgba(0, 0, 0, 0.35)
+            );
+            background-size: 100% 4px;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 40%, rgba(3, 7, 18, 0.9) 100%);
+            z-index: 9;
+            pointer-events: none;
+        }
+
+        /* Canvas Container */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Glassmorphism Panel Cards */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-panel:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        /* Cyberpunk Tactical Clip Button */
+        .cyber-btn {
+            background: var(--primary);
+            color: #030712;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 0.75rem 1.75rem;
+            clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+            transition: all 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .cyber-btn:hover {
+            background: #ffffff;
+            color: #030712;
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .cyber-btn-outline {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid var(--panel-border);
+        }
+
+        .cyber-btn-outline:hover {
+            border-color: var(--secondary);
+            color: var(--secondary);
+            box-shadow: 0 0 15px rgba(255, 70, 85, 0.4);
+            background: rgba(255, 70, 85, 0.1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #030712;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        /* Crosshair Cursor Tracking Indicator */
+        .crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 11;
+            opacity: 0.25;
+        }
+
+        .crosshair::before, .crosshair::after {
+            content: '';
+            position: absolute;
+            background: var(--primary);
+        }
+
+        .crosshair::before {
+            top: 14px;
+            left: 0;
+            width: 30px;
+            height: 2px;
+        }
+
+        .crosshair::after {
+            top: 0;
+            left: 14px;
+            width: 2px;
+            height: 30px;
+        }
+
+        .nav-link {
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--primary);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Three.js WebGL Canvas -->
+    <div id="canvas-container"></div>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+    <div class="crosshair"></div>
+
+    <!-- UI Overlay Layer -->
+    <div class="relative z-20 min-h-screen flex flex-col justify-between pointer-events-none">
+        
+        <!-- Header / Navigation -->
+        <header class="sticky top-0 z-50 px-6 py-4 md:px-12 backdrop-blur-md border-b border-cyan-500/20 pointer-events-auto">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <!-- Brand Logo -->
+                <a href="#" class="flex items-center gap-3 group">
+                    <div class="w-10 h-10 bg-cyan-500/20 border border-cyan-400 flex items-center justify-center font-orbitron font-extrabold text-cyan-400 group-hover:bg-cyan-400 group-hover:text-black transition-all">
+                        BH
+                    </div>
+                    <div>
+                        <span class="font-orbitron text-xl font-black tracking-widest text-white block leading-none">BHUVAN</span>
+                        <span class="text-xs text-cyan-400 font-mono tracking-widest uppercase">3D MEDIA SPECIALIST</span>
+                    </div>
+                </a>
+
+                <!-- Desktop Nav -->
+                <nav class="hidden md:flex items-center gap-8 font-orbitron text-sm font-semibold tracking-wider">
+                    <a href="#summary" class="nav-link text-gray-300 hover:text-cyan-400 active">SUMMARY</a>
+                    <a href="#skills" class="nav-link text-gray-300 hover:text-cyan-400">SKILLS</a>
+                    <a href="#projects" class="nav-link text-gray-300 hover:text-cyan-400">PROJECTS</a>
+                    <a href="#education" class="nav-link text-gray-300 hover:text-cyan-400">EDUCATION</a>
+                    <a href="#contact" class="nav-link text-gray-300 hover:text-cyan-400">CONTACT</a>
+                </nav>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" class="md:hidden text-cyan-400 text-2xl focus:outline-none">
+                    <i class="fa-solid fa-bars-staggered"></i>
+                </button>
+            </div>
+
+            <!-- Mobile Dropdown Menu -->
+            <div id="mobile-menu" class="hidden md:hidden mt-4 pt-4 border-t border-cyan-500/20 flex flex-col gap-4 font-orbitron text-center">
+                <a href="#summary" class="text-gray-300 hover:text-cyan-400">SUMMARY</a>
+                <a href="#skills" class="text-gray-300 hover:text-cyan-400">SKILLS</a>
+                <a href="#projects" class="text-gray-300 hover:text-cyan-400">PROJECTS</a>
+                <a href="#education" class="text-gray-300 hover:text-cyan-400">EDUCATION</a>
+                <a href="#contact" class="text-gray-300 hover:text-cyan-400">CONTACT</a>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="pointer-events-auto px-6 md:px-12 py-8 max-w-7xl mx-auto w-full space-y-24">
+
+            <!-- HERO / SUMMARY SECTION -->
+            <section id="summary" class="min-h-[85vh] flex flex-col justify-center items-start pt-12">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono tracking-widest uppercase mb-4 rounded-sm">
+                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    UNREAL ENGINE 5 & UNITY READY
+                </div>
+                
+                <h1 class="text-4xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-400 mb-4 tracking-tight leading-none uppercase">
+                    DIGITAL MEDIA <br><span class="text-cyan-400">SPECIALIST & 3D ANIMATOR</span>
+                </h1>
+
+                <p class="text-gray-300 text-lg md:text-xl max-w-2xl font-medium leading-relaxed mb-8">
+                    Based in Bengaluru, India. Creative & detail-oriented specialist crafting high-fidelity 3D modeling, animation pipelines, visual design, and gaming brand identity systems from storyboard to render execution.
+                </p>
+
+                <div class="flex flex-wrap gap-4 mb-12">
+                    <a href="#projects" class="cyber-btn">
+                        <i class="fa-solid fa-gamepad"></i> EXPLORE PROJECTS
+                    </a>
+                    <a href="#contact" class="cyber-btn cyber-btn-outline">
+                        <i class="fa-solid fa-paper-plane"></i> INITIATE CONTACT
+                    </a>
+                </div>
+
+                <!-- Live Engine Stats HUD Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-3xl">
+                    <div class="glass-panel p-4">
+                        <div class="text-xs text-gray-400 font-mono">LOCATION</div>
+                        <div class="text-base font-bold text-cyan-400 font-orbitron">BENGALURU, IN</div>
+                    </div>
+                    <div class="glass-panel p-4">
+                        <div class="text-xs text-gray-400 font-mono">SPECIALIZATION</div>
+                        <div class="text-base font-bold text-cyan-400 font-orbitron">3D & MOTION</div>
+                    </div>
+                    <div class="glass-panel p-4">
+                        <div class="text-xs text-gray-400 font-mono">PRIMARY SUITE</div>
+                        <div class="text-base font-bold text-cyan-400 font-orbitron">BLENDER / CANVA</div>
+                    </div>
+                    <div class="glass-panel p-4">
+                        <div class="text-xs text-gray-400 font-mono">STATUS</div>
+                        <div class="text-base font-bold text-emerald-400 font-orbitron">AVAILABLE</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CORE COMPETENCIES & TECHNICAL SKILLS -->
+            <section id="skills" class="space-y-8">
+                <div class="border-l-4 border-cyan-400 pl-4">
+                    <h2 class="text-3xl font-black uppercase text-white tracking-wider">TECHNICAL SKILLS & COMPETENCIES</h2>
+                    <p class="text-cyan-400 font-mono text-sm">SYSTEM ARCHITECTURE // CREATIVE PIPELINE</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Skill Card 1 -->
+                    <div class="glass-panel p-6 flex flex-col justify-between">
+                        <div>
+                            <div class="w-12 h-12 bg-cyan-500/10 border border-cyan-400/40 rounded-sm flex items-center justify-center text-cyan-400 text-xl mb-4">
+                                <i class="fa-solid fa-cube"></i>
+                            </div>
+                            <h3 class="font-orbitron font-bold text-lg text-white mb-2">3D & ANIMATION</h3>
+                            <ul class="text-gray-300 text-sm space-y-2 font-medium">
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-cyan-400"></i> 3D Modeling & Rigging</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-cyan-400"></i> Surface Texturing</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-cyan-400"></i> Character Design</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-cyan-400"></i> 2D / 3D Motion Graphics</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Skill Card 2 -->
+                    <div class="glass-panel p-6 flex flex-col justify-between">
+                        <div>
+                            <div class="w-12 h-12 bg-red-500/10 border border-red-400/40 rounded-sm flex items-center justify-center text-red-400 text-xl mb-4">
+                                <i class="fa-solid fa-pen-ruler"></i>
+                            </div>
+                            <h3 class="font-orbitron font-bold text-lg text-white mb-2">SOFTWARE TOOLS</h3>
+                            <ul class="text-gray-300 text-sm space-y-2 font-medium">
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-red-400"></i> Blender (3D Pipeline)</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-red-400"></i> Canva Pro & Design</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-red-400"></i> Non-Linear Video Editing</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-red-400"></i> Digital Illustration</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Skill Card 3 -->
+                    <div class="glass-panel p-6 flex flex-col justify-between">
+                        <div>
+                            <div class="w-12 h-12 bg-blue-500/10 border border-blue-400/40 rounded-sm flex items-center justify-center text-blue-400 text-xl mb-4">
+                                <i class="fa-solid fa-bullhorn"></i>
+                            </div>
+                            <h3 class="font-orbitron font-bold text-lg text-white mb-2">BRAND STRATEGY</h3>
+                            <ul class="text-gray-300 text-sm space-y-2 font-medium">
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-blue-400"></i> Brand Identity Systems</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-blue-400"></i> Visual Storytelling</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-blue-400"></i> Influencer Marketing</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-blue-400"></i> Typography & Layout</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Skill Card 4 -->
+                    <div class="glass-panel p-6 flex flex-col justify-between">
+                        <div>
+                            <div class="w-12 h-12 bg-emerald-500/10 border border-emerald-400/40 rounded-sm flex items-center justify-center text-emerald-400 text-xl mb-4">
+                                <i class="fa-solid fa-sliders"></i>
+                            </div>
+                            <h3 class="font-orbitron font-bold text-lg text-white mb-2">CORE STRENGTHS</h3>
+                            <ul class="text-gray-300 text-sm space-y-2 font-medium">
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-emerald-400"></i> Operations Management</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-emerald-400"></i> Project Planning</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-emerald-400"></i> Multi-tasking Execution</li>
+                                <li class="flex items-center gap-2"><i class="fa-solid fa-angle-right text-emerald-400"></i> Tactical Visual Design</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FEATURED PROJECTS -->
+            <section id="projects" class="space-y-8">
+                <div class="flex justify-between items-end border-l-4 border-red-500 pl-4">
+                    <div>
+                        <h2 class="text-3xl font-black uppercase text-white tracking-wider">FEATURED PROJECTS</h2>
+                        <p class="text-red-400 font-mono text-sm">SELECT MISSION LOGS // RENDER EXECUTIONS</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Project 1 -->
+                    <div class="glass-panel p-6 flex flex-col justify-between group">
+                        <div>
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="px-2 py-1 bg-cyan-500/10 border border-cyan-400/30 text-cyan-400 text-xs font-mono uppercase">VISUAL DESIGN & STORYTELLING</span>
+                                <i class="fa-solid fa-motorcycle text-2xl text-cyan-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h3 class="text-xl font-bold font-orbitron text-white mb-2 group-hover:text-cyan-400 transition-colors">
+                                Moto Bharat: Vintage Motorcycle Concept Magazine
+                            </h3>
+                            <p class="text-gray-300 text-sm leading-relaxed mb-4">
+                                Lead Visual Designer & Storyteller. Designed and structured a multi-issue graphic novel and magazine layout celebrating vintage Indian motorcycle culture. Created custom comic panel layouts, visual trend analyses, narrative storylines, and branding artwork.
+                            </p>
+                        </div>
+                        <button onclick="openModal('Moto Bharat: Vintage Motorcycle Concept Magazine', 'Lead Visual Designer & Storyteller', 'Designed and structured a multi-issue graphic novel and magazine layout celebrating vintage Indian motorcycle culture.\n\nKey Highlights:\n- Developed custom comic panel layouts and high-octane narrative storylines.\n- Executed visual trend analyses for vintage automotive aesthetics.\n- Created complete branding artwork and custom paint design concepts.')" class="cyber-btn cyber-btn-outline w-full justify-center text-xs">
+                            <i class="fa-solid fa-circle-info"></i> DECRYPTION LOG
+                        </button>
+                    </div>
+
+                    <!-- Project 2 -->
+                    <div class="glass-panel p-6 flex flex-col justify-between group">
+                        <div>
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="px-2 py-1 bg-red-500/10 border border-red-400/30 text-red-400 text-xs font-mono uppercase">3D ASSET & CHARACTER</span>
+                                <i class="fa-solid fa-vr-cardboard text-2xl text-red-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h3 class="text-xl font-bold font-orbitron text-white mb-2 group-hover:text-red-400 transition-colors">
+                                3D Indie Game Character Design
+                            </h3>
+                            <p class="text-gray-300 text-sm leading-relaxed mb-4">
+                                3D Modeler & Texture Artist. Modeled, rigged, and textured original 3D characters optimized for interactive indie game environments. Applied realistic and stylized surface shaders to produce production-ready digital asset models for real-time engines.
+                            </p>
+                        </div>
+                        <button onclick="openModal('3D Indie Game Character Design', '3D Modeler & Texture Artist', 'Modeled, rigged, and textured original 3D characters optimized for interactive indie game environments.\n\nKey Highlights:\n- Complete poly-count optimization for real-time engines like Unity and Unreal Engine.\n- Advanced skeletal rigging for dynamic gameplay animations.\n- Stylized PBR texture maps and material shader creation.')" class="cyber-btn cyber-btn-outline w-full justify-center text-xs">
+                            <i class="fa-solid fa-circle-info"></i> DECRYPTION LOG
+                        </button>
+                    </div>
+
+                    <!-- Project 3 -->
+                    <div class="glass-panel p-6 flex flex-col justify-between group">
+                        <div>
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="px-2 py-1 bg-blue-500/10 border border-blue-400/30 text-blue-400 text-xs font-mono uppercase">MOTION GRAPHICS & EDITING</span>
+                                <i class="fa-solid fa-film text-2xl text-blue-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h3 class="text-xl font-bold font-orbitron text-white mb-2 group-hover:text-blue-400 transition-colors">
+                                Animated Explainer Video Production
+                            </h3>
+                            <p class="text-gray-300 text-sm leading-relaxed mb-4">
+                                Motion Graphics Artist & Editor. Scripted, designed, and animated a complete, high-engagement 2D/3D explainer video. Managed end-to-end motion graphics creation, audio synchronization, and final video editing.
+                            </p>
+                        </div>
+                        <button onclick="openModal('Animated Explainer Video Production', 'Motion Graphics Artist & Editor', 'Scripted, designed, and animated a complete, high-engagement 2D/3D explainer video.\n\nKey Highlights:\n- End-to-end visual pipeline from concept storyboard to final video render.\n- Precision keyframe animation and multi-track audio synchronization.\n- Hybrid 2D/3D visual effects integration for digital campaigns.')" class="cyber-btn cyber-btn-outline w-full justify-center text-xs">
+                            <i class="fa-solid fa-circle-info"></i> DECRYPTION LOG
+                        </button>
+                    </div>
+
+                    <!-- Project 4 -->
+                    <div class="glass-panel p-6 flex flex-col justify-between group">
+                        <div>
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="px-2 py-1 bg-emerald-500/10 border border-emerald-400/30 text-emerald-400 text-xs font-mono uppercase">BRAND IDENTITY</span>
+                                <i class="fa-solid fa-vector-square text-2xl text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                            </div>
+                            <h3 class="text-xl font-bold font-orbitron text-white mb-2 group-hover:text-emerald-400 transition-colors">
+                                Startup Brand Identity System
+                            </h3>
+                            <p class="text-gray-300 text-sm leading-relaxed mb-4">
+                                Brand Identity Designer. Built comprehensive brand design packages, including custom logo design, visual brand guidelines, and typography. Developed high-impact promotional collateral and social media visual assets tailored for digital launches.
+                            </p>
+                        </div>
+                        <button onclick="openModal('Startup Brand Identity System', 'Brand Identity Designer', 'Built comprehensive brand design packages tailored for market entry.\n\nKey Highlights:\n- Custom vector logo design and full visual brand style guidelines.\n- Typography selection and color palette systems.\n- Promotional marketing collateral and high-converting social media visual packages.')" class="cyber-btn cyber-btn-outline w-full justify-center text-xs">
+                            <i class="fa-solid fa-circle-info"></i> DECRYPTION LOG
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- EDUCATION & INTERESTS GRID -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Education & Certification (2 cols) -->
+                <section id="education" class="lg:col-span-2 space-y-6">
+                    <div class="border-l-4 border-yellow-400 pl-4">
+                        <h2 class="text-2xl font-black uppercase text-white tracking-wider">EDUCATION & CERTIFICATIONS</h2>
+                        <p class="text-yellow-400 font-mono text-xs">ACADEMIC LOGS & DEGREES</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="glass-panel p-5">
+                            <div class="flex justify-between items-start flex-wrap gap-2">
+                                <div>
+                                    <h3 class="font-orbitron font-bold text-white text-base">Bachelor of Vocation (B.Voc) in Digital Media & Animation</h3>
+                                    <p class="text-cyan-400 text-sm font-medium">St. Joseph's University, Bengaluru</p>
+                                </div>
+                                <span class="px-2 py-1 bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 text-xs font-mono">DEGREE</span>
+                            </div>
+                            <p class="text-gray-300 text-xs mt-2">
+                                Focus on advanced 3D modeling, animation pipelines, visual storytelling, media law, and graphic design.
+                            </p>
+                        </div>
+
+                        <div class="glass-panel p-5">
+                            <div class="flex justify-between items-start flex-wrap gap-2">
+                                <div>
+                                    <h3 class="font-orbitron font-bold text-white text-base">Advanced Animation & Equipment Certificate</h3>
+                                    <p class="text-red-400 text-sm font-medium">ZICA Animation Institute</p>
+                                </div>
+                                <span class="px-2 py-1 bg-red-500/10 border border-red-400/30 text-red-300 text-xs font-mono">CERTIFICATE</span>
+                            </div>
+                            <p class="text-gray-300 text-xs mt-2">
+                                Specialized practical training in professional animation software, pipeline workflows, and studio equipment.
+                            </p>
+                        </div>
+
+                        <div class="glass-panel p-5">
+                            <div class="flex justify-between items-start flex-wrap gap-2">
+                                <div>
+                                    <h3 class="font-orbitron font-bold text-white text-base">Pre-University Course (PUC)</h3>
+                                    <p class="text-yellow-400 text-sm font-medium">Mother Teresa CEBA</p>
+                                </div>
+                                <span class="px-2 py-1 bg-yellow-500/10 border border-yellow-400/30 text-yellow-300 text-xs font-mono">PUC</span>
+                            </div>
+                            <p class="text-gray-300 text-xs mt-2">
+                                Coursework in English, Media, Internet Applications, and General Academics.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Interests & Pursuits (1 col) -->
+                <section class="space-y-6">
+                    <div class="border-l-4 border-emerald-400 pl-4">
+                        <h2 class="text-2xl font-black uppercase text-white tracking-wider">CREATIVE PURSUITS</h2>
+                        <p class="text-emerald-400 font-mono text-xs">CORE PASSIONS</p>
+                    </div>
+
+                    <div class="glass-panel p-6 space-y-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-emerald-500/10 border border-emerald-400/40 rounded flex items-center justify-center text-emerald-400">
+                                <i class="fa-solid fa-book-open"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-orbitron font-bold text-sm text-white">Graphic Novels</h4>
+                                <p class="text-xs text-gray-400">Layout creation & narrative comic art</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-cyan-500/10 border border-cyan-400/40 rounded flex items-center justify-center text-cyan-400">
+                                <i class="fa-solid fa-motorcycle"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-orbitron font-bold text-sm text-white">Vintage Aesthetics</h4>
+                                <p class="text-xs text-gray-400">Motorcycle culture & custom paint design</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-red-500/10 border border-red-400/40 rounded flex items-center justify-center text-red-400">
+                                <i class="fa-solid fa-crosshairs"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-orbitron font-bold text-sm text-white">Tactical Visual Design</h4>
+                                <p class="text-xs text-gray-400">UI/UX HUD overlays & gaming interfaces</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- CONTACT SECTION -->
+            <section id="contact" class="space-y-8 pb-12">
+                <div class="border-l-4 border-cyan-400 pl-4">
+                    <h2 class="text-3xl font-black uppercase text-white tracking-wider">INITIATE CONNECTION</h2>
+                    <p class="text-cyan-400 font-mono text-sm">COMMUNICATION FREQUENCY // DIRECT TRANSMISSION</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <a href="tel:+918722818958" class="glass-panel p-6 flex items-center gap-4 group hover:border-cyan-400">
+                        <div class="w-12 h-12 bg-cyan-500/10 border border-cyan-400/40 rounded flex items-center justify-center text-cyan-400 text-xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-phone"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-400 font-mono">DIRECT PHONE</div>
+                            <div class="font-orbitron font-bold text-white text-sm group-hover:text-cyan-400">+91 8722818958</div>
+                        </div>
+                    </a>
+
+                    <a href="mailto:bhuvan@gmail.com" class="glass-panel p-6 flex items-center gap-4 group hover:border-red-400">
+                        <div class="w-12 h-12 bg-red-500/10 border border-red-400/40 rounded flex items-center justify-center text-red-400 text-xl group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-envelope"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-400 font-mono">ELECTRONIC MAIL</div>
+                            <div class="font-orbitron font-bold text-white text-sm group-hover:text-red-400">bhuvan@gmail.com</div>
+                        </div>
+                    </a>
+
+                    <a href="https://linkedin.com/in/bhuvan" target="_blank" class="glass-panel p-6 flex items-center gap-4 group hover:border-blue-400">
+                        <div class="w-12 h-12 bg-blue-500/10 border border-blue-400/40 rounded flex items-center justify-center text-blue-400 text-xl group-hover:scale-110 transition-transform">
+                            <i class="fa-brands fa-linkedin-in"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-400 font-mono">LINKEDIN PROFILE</div>
+                            <div class="font-orbitron font-bold text-white text-sm group-hover:text-blue-400">linkedin.com/in/bhuvan</div>
+                        </div>
+                    </a>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- HUD FOOTER CONTROLS -->
+        <footer class="pointer-events-auto px-6 py-4 md:px-12 backdrop-blur-md border-t border-cyan-500/20 bg-slate-950/80">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                
+                <!-- HUD Live FPS Counter -->
+                <div class="flex items-center gap-6 font-mono text-xs text-gray-400">
+                    <div>ENGINE: <span id="hud-engine" class="text-cyan-400 font-bold">UNREAL ENGINE 5</span></div>
+                    <div>FPS: <span id="fps-val" class="text-emerald-400 font-bold">60</span></div>
+                    <div>STATUS: <span class="text-cyan-400 font-bold">ONLINE</span></div>
+                </div>
+
+                <!-- Theme Switcher Controls -->
+                <div class="flex items-center gap-2 bg-slate-900/80 p-1 border border-white/10 rounded">
+                    <button onclick="setEnginePreset('unreal')" id="preset-unreal" class="preset-btn active px-3 py-1 text-xs font-orbitron font-bold text-cyan-400 bg-cyan-500/20 border border-cyan-400 rounded-sm">UNREAL CYAN</button>
+                    <button onclick="setEnginePreset('unity')" id="preset-unity" class="preset-btn px-3 py-1 text-xs font-orbitron font-bold text-gray-400 hover:text-red-400 transition-colors">CYBER RED</button>
+                    <button onclick="setEnginePreset('tactical')" id="preset-tactical" class="preset-btn px-3 py-1 text-xs font-orbitron font-bold text-gray-400 hover:text-yellow-400 transition-colors">TACTICAL GOLD</button>
+                </div>
+
+                <div class="text-xs text-gray-500 font-mono">
+                    © BHUVAN DIGITAL MEDIA. ALL RIGHTS RESERVED.
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Decryption Modal -->
+    <div id="modal-backdrop" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel p-8 max-w-2xl w-full space-y-6 border-cyan-400">
+            <div class="flex justify-between items-start">
+                <div>
+                    <span id="modal-role" class="px-2 py-1 bg-cyan-500/20 border border-cyan-400 text-cyan-300 font-mono text-xs uppercase">ROLE</span>
+                    <h3 id="modal-title" class="text-2xl font-black font-orbitron text-white mt-2">PROJECT TITLE</h3>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            
+            <div id="modal-body" class="text-gray-300 text-sm whitespace-pre-line leading-relaxed border-t border-b border-cyan-500/20 py-4 font-medium">
+                PROJECT DETAILS
+            </div>
+
+            <div class="flex justify-end">
+                <button onclick="closeModal()" class="cyber-btn">CLOSE LOG</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- THREE.JS 3D ENVIRONMENT ENGINE ---
+        let scene, camera, renderer;
+        let particles, gridHelper, coreMesh, outerRing, innerRing, floatingCubes = [];
+        let pointLight1, pointLight2, ambientLight;
+
+        let mouseX = 0, mouseY = 0;
+        let targetX = 0, targetY = 0;
+        const windowHalfX = window.innerWidth / 2;
+        const windowHalfY = window.innerHeight / 2;
+
+        const enginePresets = {
+            unreal: {
+                name: "UNREAL ENGINE 5",
+                primary: 0x00f0ff,
+                secondary: 0x3b82f6,
+                accent: 0xff0055,
+                bg: 0x030712,
+                panelBorder: "rgba(0, 240, 255, 0.25)"
+            },
+            unity: {
+                name: "CYBERPUNK RED",
+                primary: 0xff4655,
+                secondary: 0xff0055,
+                accent: 0x00f0ff,
+                bg: 0x0a0005,
+                panelBorder: "rgba(255, 70, 85, 0.25)"
+            },
+            tactical: {
+                name: "TACTICAL GOLD",
+                primary: 0xeab308,
+                secondary: 0xf97316,
+                accent: 0x10b981,
+                bg: 0x070702,
+                panelBorder: "rgba(234, 179, 8, 0.25)"
+            }
+        };
+
+        let currentPresetKey = 'unreal';
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+
+            // 1. Scene setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(enginePresets[currentPresetKey].bg, 0.015);
+
+            // 2. Camera setup
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 4, 25);
+
+            // 3. Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            container.appendChild(renderer.domElement);
+
+            // 4. Lights
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
+            scene.add(ambientLight);
+
+            pointLight1 = new THREE.PointLight(enginePresets[currentPresetKey].primary, 3, 50);
+            pointLight1.position.set(10, 10, 10);
+            scene.add(pointLight1);
+
+            pointLight2 = new THREE.PointLight(enginePresets[currentPresetKey].accent, 2, 50);
+            pointLight2.position.set(-10, -5, -10);
+            scene.add(pointLight2);
+
+            // 5. Construct Environment Objects
+            buildSceneObjects();
+
+            // 6. Event Listeners
+            document.addEventListener('mousemove', onMouseMove, false);
+            window.addEventListener('resize', onWindowResize, false);
+            
+            // FPS simulation
+            setInterval(updateFPS, 1000);
+        }
+
+        function buildSceneObjects() {
+            const worldGroup = new THREE.Group();
+            worldGroup.name = "worldGroup";
+            scene.add(worldGroup);
+
+            // Grid Floor
+            gridHelper = new THREE.GridHelper(100, 50, enginePresets[currentPresetKey].primary, 0x1e293b);
+            gridHelper.position.y = -8;
+            worldGroup.add(gridHelper);
+
+            // Central Core Wireframe Geometry
+            const coreGeo = new THREE.IcosahedronGeometry(4, 1);
+            const coreMat = new THREE.MeshStandardMaterial({
+                color: 0x0b0f19,
+                roughness: 0.1,
+                metalness: 0.9,
+                wireframe: true,
+                emissive: enginePresets[currentPresetKey].primary,
+                emissiveIntensity: 0.3
+            });
+            coreMesh = new THREE.Mesh(coreGeo, coreMat);
+            worldGroup.add(coreMesh);
+
+            // Torus Tech Rings
+            const ringGeo = new THREE.TorusGeometry(7, 0.12, 16, 100);
+            const ringMat = new THREE.MeshStandardMaterial({
+                color: enginePresets[currentPresetKey].primary,
+                emissive: enginePresets[currentPresetKey].primary,
+                emissiveIntensity: 0.8,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+            outerRing = new THREE.Mesh(ringGeo, ringMat);
+            outerRing.rotation.x = Math.PI / 2;
+            worldGroup.add(outerRing);
+
+            const innerRingGeo = new THREE.TorusGeometry(5.5, 0.06, 16, 100);
+            innerRing = new THREE.Mesh(innerRingGeo, ringMat);
+            innerRing.rotation.y = Math.PI / 4;
+            worldGroup.add(innerRing);
+
+            // Floating Cubes
+            const cubeGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+            const cubeMat = new THREE.MeshStandardMaterial({
+                color: 0x0f172a,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+
+            for (let i = 0; i < 35; i++) {
+                const cube = new THREE.Mesh(cubeGeo, cubeMat);
+                cube.position.x = (Math.random() - 0.5) * 45;
+                cube.position.y = (Math.random() - 0.5) * 30;
+                cube.position.z = (Math.random() - 0.5) * 45;
+
+                cube.rotation.x = Math.random() * Math.PI;
+                cube.rotation.y = Math.random() * Math.PI;
+
+                cube.userData = {
+                    speedX: (Math.random() - 0.5) * 0.01,
+                    speedY: (Math.random() - 0.5) * 0.01,
+                    speedZ: (Math.random() - 0.5) * 0.01,
+                    rotSpeed: (Math.random() - 0.5) * 0.02
+                };
+
+                floatingCubes.push(cube);
+                worldGroup.add(cube);
+            }
+
+            // Particle Ambient Field
+            const particleCount = 2000;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 80;
+                positions[i + 1] = (Math.random() - 0.5) * 80;
+                positions[i + 2] = (Math.random() - 0.5) * 80;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const particleMat = new THREE.PointsMaterial({
+                color: enginePresets[currentPresetKey].primary,
+                size: 0.12,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+
+            particles = new THREE.Points(geometry, particleMat);
+            worldGroup.add(particles);
+        }
+
+        function onMouseMove(event) {
+            mouseX = (event.clientX - windowHalfX) * 0.001;
+            mouseY = (event.clientY - windowHalfY) * 0.001;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+
+            // Interpolated camera orbit based on mouse
+            targetX += (mouseX - targetX) * 0.05;
+            targetY += (mouseY - targetY) * 0.05;
+
+            camera.position.x = Math.sin(targetX * 2) * 25;
+            camera.position.z = Math.cos(targetX * 2) * 25;
+            camera.position.y = 4 + (targetY * 8);
+            camera.lookAt(scene.position);
+
+            // Point light follows mouse reaction
+            pointLight1.position.x = Math.sin(targetX * 4) * 15;
+            pointLight1.position.y = Math.cos(targetY * 4) * 15;
+
+            if (coreMesh) {
+                coreMesh.rotation.y += 0.005;
+                coreMesh.rotation.x += 0.002;
+            }
+
+            if (outerRing && innerRing) {
+                outerRing.rotation.z += 0.008;
+                outerRing.rotation.y += 0.004;
+                innerRing.rotation.z -= 0.01;
+            }
+
+            if (particles) {
+                particles.rotation.y += 0.0004;
+            }
+
+            floatingCubes.forEach(cube => {
+                cube.rotation.x += cube.userData.rotSpeed;
+                cube.rotation.y += cube.userData.rotSpeed;
+
+                cube.position.x += cube.userData.speedX;
+                cube.position.y += cube.userData.speedY;
+                cube.position.z += cube.userData.speedZ;
+
+                if (Math.abs(cube.position.x) > 22) cube.userData.speedX *= -1;
+                if (Math.abs(cube.position.y) > 15) cube.userData.speedY *= -1;
+                if (Math.abs(cube.position.z) > 22) cube.userData.speedZ *= -1;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // --- UI INTERACTION FUNCTIONS ---
+        function setEnginePreset(key) {
+            if (!enginePresets[key]) return;
+            currentPresetKey = key;
+            const p = enginePresets[key];
+
+            document.getElementById('hud-engine').innerText = p.name;
+
+            // Update button active styling
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.className = "preset-btn px-3 py-1 text-xs font-orbitron font-bold text-gray-400 hover:text-white transition-colors";
+            });
+            const activeBtn = document.getElementById(`preset-${key}`);
+            if (activeBtn) {
+                activeBtn.className = "preset-btn active px-3 py-1 text-xs font-orbitron font-bold text-cyan-400 bg-cyan-500/20 border border-cyan-400 rounded-sm";
+            }
+
+            // Update 3D Materials and Lights
+            scene.fog.color.setHex(p.bg);
+            renderer.setClearColor(p.bg);
+
+            pointLight1.color.setHex(p.primary);
+            pointLight2.color.setHex(p.accent);
+
+            if (coreMesh) coreMesh.material.emissive.setHex(p.primary);
+            if (outerRing) {
+                outerRing.material.color.setHex(p.primary);
+                outerRing.material.emissive.setHex(p.primary);
+            }
+            if (particles) particles.material.color.setHex(p.primary);
+
+            if (gridHelper) {
+                const worldGroup = scene.getObjectByName("worldGroup");
+                if (worldGroup) {
+                    worldGroup.remove(gridHelper);
+                    gridHelper = new THREE.GridHelper(100, 50, p.primary, 0x1e293b);
+                    gridHelper.position.y = -8;
+                    worldGroup.add(gridHelper);
+                }
+            }
+        }
+
+        function updateFPS() {
+            const fps = Math.floor(Math.random() * (62 - 58 + 1)) + 58;
+            document.getElementById('fps-val').innerText = fps;
+        }
+
+        // Modal Handler
+        function openModal(title, role, body) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-role').innerText = role;
+            document.getElementById('modal-body').innerText = body;
+            document.getElementById('modal-backdrop').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-backdrop').classList.add('hidden');
+        }
+
+        // Mobile Menu Toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // Initialize on Load
+        window.onload = () => {
+            init3D();
+            animate3D();
+        };
+    </script>
+</body>
+</html>
